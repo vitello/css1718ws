@@ -1,4 +1,4 @@
 node_modules/
-service-account-credentials.json
-.firebaserc
-firebase.json
+/service-account-credentials.json
+/.firebaserc
+/firebase.json
