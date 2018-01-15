@@ -12,7 +12,7 @@ process.env.DEBUG = 'actions-on-google:*';
 
 const Actions = {
     UNRECOGNIZED_DEEP_LINK: 'deeplink.unknown',
-    ACTION_SHOE: 'actionShoe',
+    ACTION_PRODUCT_SEARCH: 'actionProductSearch',
     ACTION_ORDER_66: 'actionOrder66'
   };
 //   /** Dialogflow Parameters {@link https://dialogflow.com/docs/actions-and-parameters#parameters} */
@@ -31,7 +31,7 @@ const Actions = {
 //   };  
 
 /* App: Shoes */
-const askShoe = app => {
+const askProduct = app => {
     app.ask('hello world');
 }
 
@@ -55,7 +55,7 @@ const executeOrder66 = app => {
 /* Actions */
 const actionMap = new Map();
 //actionMap.set(Actions.UNRECOGNIZED_DEEP_LINK, unhandledDeepLinks);
-actionMap.set(Actions.ACTION_SHOE, askShoe);
+actionMap.set(Actions.ACTION_PRODUCT_SEARCH, askProduct);
 actionMap.set(Actions.ACTION_ORDER_66, executeOrder66);
 
 /* Main App */
