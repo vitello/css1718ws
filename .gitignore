@@ -6,3 +6,5 @@ firebase.json
 /.vs
 .suo
 sampleCode*
+/.vs/
+.vs/
