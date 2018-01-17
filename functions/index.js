@@ -2,6 +2,7 @@
 
 const { DialogflowApp } = require('actions-on-google');
 const functions = require('firebase-functions');
+const bodyParser = require('body-parser');
 
 const strings = require('./strings');
 
@@ -10,63 +11,105 @@ admin.initializeApp(functions.config().firebase);
 
 process.env.DEBUG = 'actions-on-google:*';
 
-const Actions = {
-    UNRECOGNIZED_DEEP_LINK: 'deeplink.unknown',
-    ACTION_PRODUCT_SEARCH: 'actionProductSearch',
-    ACTION_ORDER_66: 'actionOrder66'
-  };
-//   /** Dialogflow Parameters {@link https://dialogflow.com/docs/actions-and-parameters#parameters} */
-//   const Parameters = {
-//     CATEGORY: 'category'
-//   };
-//   /** Dialogflow Contexts {@link https://dialogflow.com/docs/contexts} */
-//   const Contexts = {
-//     FACTS: 'choose_fact-followup',
-//     CATS: 'choose_cats-followup'
-//   };
-//   /** Dialogflow Context Lifespans {@link https://dialogflow.com/docs/contexts#lifespan} */
-//   const Lifespans = {
-//     DEFAULT: 5,
-//     END: 0
-//   };  
+const ACTION = {
+    SPORTS: 'action_sports',
+    PRODUCT: 'action_product',
+    ORDER_66: 'action_order66',
+    WELCOME: 'input.welcome',
+    UNKNOWN: 'input.unknown',
+    DEFAULT: 'default'
+    //TEMPLATE: 'acion.template'
+};
 
-/* App: Shoes */
+const ARGUMENT = {
+    SPORTS: 'entitySports',
+    PRODUCT: 'entity_product',
+    ORDER66: 'entityOrder66'
+};
+
+const CONTEXT = {
+    SPORTS: 'intent_sports'
+};
+
+const askSports = app => {
+    let argumentSports = app.getArgument(ARGUMENT.SPORTS);
+    let responseToUser = app.buildRichResponse().addSimpleResponse({
+        speech: 'That\'s great, you want to practice ' + argumentSports + '! Our shop provides lots of nice things for you.',
+        displayText: 'That\'s great, you want to practice ' + argumentSports + '! Our shop provides lots of nice things for you.'
+    });
+    console.log('Response to Dialogflow (AoG): ' + JSON.stringify(responseToUser));
+    app.ask(responseToUser); // Send response to Dialogflow and Google Assistant
+};
+
 const askProduct = app => {
-    app.ask('hello world');
-}
+    let argumentSports = app.getContextArgument(CONTEXT.SPORTS, ARGUMENT.SPORTS);
+    let argumentProduct = app.getArgument(ARGUMENT.PRODUCT);
+    let responseToUser = app.buildRichResponse().addSimpleResponse({
+        speech: 'You\'re welcome! Here are some ' + argumentSports.value + ' ' + argumentProduct + ' for you!',
+        displayText: 'You\'re welcome! Here are some ' + argumentSports.value + ' ' + argumentProduct + ' for you!'
+    });
+    console.log('Response to Dialogflow (AoG): ' + JSON.stringify(responseToUser));
+    app.ask(responseToUser); // Send response to Dialogflow and Google Assistant
+};
 
-/* App: Order66 */
-const executeOrder66 = app => {
-    var richResponse = app.buildRichResponse()
-        .addSimpleResponse('Yes, My Lord! with mobile phone')           
-        .addBasicCard(app.buildBasicCard('test')
-            .setImage(
-                'https://developers.google.com/actions/images/badges/XPM_BADGING_GoogleAssistant_VER.png',
-                'alttext'
-            )
-        )
+const askOrder66 = app => {
+    let responseToUser;
     if (app.hasSurfaceCapability(app.SurfaceCapabilities.SCREEN_OUTPUT)) {
-        app.tell(richResponse);
+        responseToUser = app.buildRichResponse()
+            .addSimpleResponse({
+                speech: 'Yes, My Lord! ',
+                displayText: 'Yes, My Lord! (with screen)'
+            })
+            .addBasicCard(app.buildBasicCard('UnterschriftUnterDemBild')
+                .setImage(
+                'https://developers.google.com/actions/images/badges/XPM_BADGING_GoogleAssistant_VER.png',
+                'TextNebenDemBild'
+                )
+            )
     } else {
-        app.tell('Yes, My Lord!');
+        responseToUser = ('Yes, My Lord!');
     }
-}
+    app.ask(responseToUser); // Send simple response to user
+};
 
-/* Actions */
+const askWelcome = app => {
+    app.ask('Hello, Welcome to my Dialogflow agent! Deployed on Google Firebase Functions'); // Send simple response to user
+};
+
+const askUnknown = app => {
+    app.ask('I\'m having trouble, can you try that again? Deployed on Google Firebase Functions'); // Send simple response to user
+};
+
+const askDefault = app => {
+    let responseToUser = {
+        //googleRichResponse: googleRichResponse, // Optional, uncomment to enable
+        //googleOutputContexts: ['weather', 2, { ['city']: 'rome' }], // Optional, uncomment to enable
+        speech: 'This message is from Dialogflow\'s Cloud Functions for Firebase editor!', // spoken response
+        text: 'This is from Dialogflow\'s Cloud Functions for Firebase editor! :-)' // displayed response
+    };
+    app.ask(responseToUser);
+};
+
+//const templateFunction = app => {
+    // ...
+//};
+
 const actionMap = new Map();
-//actionMap.set(Actions.UNRECOGNIZED_DEEP_LINK, unhandledDeepLinks);
-actionMap.set(Actions.ACTION_PRODUCT_SEARCH, askProduct);
-actionMap.set(Actions.ACTION_ORDER_66, executeOrder66);
+actionMap.set(ACTION.SPORTS, askSports);
+actionMap.set(ACTION.PRODUCT, askProduct);
+actionMap.set(ACTION.ORDER_66, askOrder66);
+actionMap.set(ACTION.UNKNOWN, askUnknown);
+actionMap.set(ACTION.WELCOME, askWelcome);
+actionMap.set(ACTION.DEFAULT, askDefault);
+//actionMap.set(ACTION.TEMPLATE, templateFunction);
 
-/* Main App */
 const dazzlerbot = functions.https.onRequest((request, response) => {
-  const app = new DialogflowApp({ request, response });
-  console.log(`Request headers: ${JSON.stringify(request.headers)}`);
-  console.log(`Request body: ${JSON.stringify(request.body)}`);
-  app.handleRequest(actionMap);
+    const app = new DialogflowApp({ request, response });
+    console.log(`Request headers: ${JSON.stringify(request.headers)}`);
+    console.log(`Request body: ${JSON.stringify(request.body)}`);
+    app.handleRequest(actionMap);
 });
 
-/* Export Main App */
 module.exports = {
     dazzlerbot
 };
