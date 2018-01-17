@@ -4,3 +4,5 @@ firebase.json
 .firebaserc
 .vs
 /.vs
+.suo
+sampleCode*

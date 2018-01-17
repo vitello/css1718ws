@@ -20,4 +20,4 @@ const categories = [
       ],
       "factPrefix": "Sure, here's a history fact."
     }
-  ];
+];
