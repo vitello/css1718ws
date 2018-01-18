@@ -62,8 +62,10 @@ const askOrder66 = app => {
             })
             .addBasicCard(app.buildBasicCard('UnterschriftUnterDemBild')
                 .setImage(
-                'https://developers.google.com/actions/images/badges/XPM_BADGING_GoogleAssistant_VER.png',
-                'TextNebenDemBild'
+                    /*variable aufgreifen, welche die Spportart enthält und
+                    per SQL den Pfad zu einem passenden Produkt aus der DB holen*/
+                    'https://developers.google.com/actions/images/badges/XPM_BADGING_GoogleAssistant_VER.png',
+                    'TextNebenDemBild'
                 )
             )
     } else {
