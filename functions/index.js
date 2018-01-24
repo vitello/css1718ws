@@ -6,12 +6,50 @@ const bodyParser = require('body-parser');
 
 const strings = require('./strings');
 
-var admin = require("firebase-admin");
+const admin = require('firebase-admin');
+
 admin.initializeApp(functions.config().firebase);
 
 process.env.DEBUG = 'actions-on-google:*';
+var db = admin.firestore();
 
-const ACTION = {
+/******************************************Datenbankabfragen*************************************************************/
+
+/***__Elemente erstellen__**//*
+var docRef = db.collection('shoes').doc('BARRICADE');
+var setBAR = docRef.set({
+    name: 'Barricade 2018',
+    color: 'white',
+    stripes: 'black',
+    img: 'link to image'
+});
+var setBAR2 = docRef.set({
+    name: 'Barricade 2018 Boost',
+    color: 'blue',
+    stripes: 'black',
+    img: 'link to image'
+});
+
+/***__Elemente abfragen__***//*
+db.collection('shoes').get()
+    .then((snapshot) => {
+        snapshot.forEach((doc) => {
+            console.log(doc.id, '=>', doc.data());
+        });
+    })
+    .catch((err) => {
+        console.log('Error getting documents', err);
+    });
+
+/***__Elemebte LÃ¶schen__***/
+function deleteData(collection, document){
+    var deleteDoc = db.collection(collection).doc(document).delete();
+}
+
+/******************************************Datenbankabfragen*************************************************************/
+
+/******************************************ACTIONS_ON_GOOGLE*************************************************************/
+const ACTION = {//Refers ti Intents --> Action
     SPORTS: 'action_sports',
     PRODUCT: 'action_product',
     ORDER_66: 'action_order66',
@@ -21,8 +59,8 @@ const ACTION = {
     //TEMPLATE: 'acion.template'
 };
 
-const ARGUMENT = {
-    SPORTS: 'entitySports',
+const ARGUMENT = {//refers to Entities
+    SPORTS: 'entity_sports',
     PRODUCT: 'entity_product',
     ORDER66: 'entityOrder66'
 };
@@ -62,7 +100,7 @@ const askOrder66 = app => {
             })
             .addBasicCard(app.buildBasicCard('UnterschriftUnterDemBild')
                 .setImage(
-                    /*variable aufgreifen, welche die Spportart enthält und
+                    /*variable aufgreifen, welche die Spportart enthï¿½lt und
                     per SQL den Pfad zu einem passenden Produkt aus der DB holen*/
                     'https://developers.google.com/actions/images/badges/XPM_BADGING_GoogleAssistant_VER.png',
                     'TextNebenDemBild'
@@ -75,7 +113,7 @@ const askOrder66 = app => {
 };
 
 const askWelcome = app => {
-    app.ask('Hello, Welcome to my Dialogflow agent! Deployed on Google Firebase Functions'); // Send simple response to user
+    app.ask('Hello, Welcome to my Dialogflow agent! Deployed on Google Firebase Armin Functions'); // Send simple response to user
 };
 
 const askUnknown = app => {
@@ -115,3 +153,5 @@ const dazzlerbot = functions.https.onRequest((request, response) => {
 module.exports = {
     dazzlerbot
 };
+
+/******************************************ACTIONS_ON_GOOGLE*************************************************************/
