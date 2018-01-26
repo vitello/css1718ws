@@ -11,42 +11,57 @@ const admin = require('firebase-admin');
 admin.initializeApp(functions.config().firebase);
 
 process.env.DEBUG = 'actions-on-google:*';
-var db = admin.firestore();
+/*******************************************__Storage Initialization__***************************************************//*
+
+Scheinbar nicht mehr unterstützt für die Verwendung mit node.js
+--> download link der in der Datenbank gespeicher ist verwenden
+
+const storage = admin.storage();//reference to storage service
+var storageRef = storage.ref();//reference to storage
+
+var gsReference = storage.refFromURL('gs://dazzlerbot.appspot.com/BARRICADE_2018_BOOST_SCHUH_standard.jpg');
 
 /******************************************Datenbankabfragen*************************************************************/
 
-/***__Elemente erstellen__**//*
+var db = admin.firestore();
+
+
+/***__Elemente erstellen__**/
 var docRef = db.collection('shoes').doc('BARRICADE');
+/*
 var setBAR = docRef.set({
     name: 'Barricade 2018',
     color: 'white',
     stripes: 'black',
-    img: 'link to image'
+    sport: 'tennis',
+    img: 'https://firebasestorage.googleapis.com/v0/b/dazzlerbot.appspot.com/o/BARRICADE_2018_BOOST_SCHUH_standard.jpg?alt=media&token=c2b3b5f6-9677-47a1-bceb-e4c25c7d75d5'
 });
 var setBAR2 = docRef.set({
     name: 'Barricade 2018 Boost',
     color: 'blue',
     stripes: 'black',
-    img: 'link to image'
+    sport: 'football',
+    img: 'https://firebasestorage.googleapis.com/v0/b/dazzlerbot.appspot.com/o/NOVAK_PRO_SCHUH_standard.jpg?alt=media&token=8263f55c-bffa-48f6-8e2e-57705b33cb61'
 });
 
 /***__Elemente abfragen__***//*
-db.collection('shoes').get()
-    .then((snapshot) => {
-        snapshot.forEach((doc) => {
-            console.log(doc.id, '=>', doc.data());
-        });
+var getDoc = docRef.get()
+    .then(doc => {
+        if (!doc.exists) {
+            console.log('No such document!');
+        } else {
+            console.log('Document data:', doc.data())
+        }
     })
-    .catch((err) => {
-        console.log('Error getting documents', err);
+    .catch(err =>{
+        console.log('Error getting document', err);
     });
 
-/***__Elemebte Löschen__***/
-function deleteData(collection, document){
-    var deleteDoc = db.collection(collection).doc(document).delete();
-}
 
-/******************************************Datenbankabfragen*************************************************************/
+
+
+/***__Elemebte Löschen__***//*
+var deleteDoc = db.collection('shoes').doc('BARRICADE').delete();
 
 /******************************************ACTIONS_ON_GOOGLE*************************************************************/
 const ACTION = {//Refers ti Intents --> Action
@@ -82,10 +97,34 @@ const askSports = app => {
 const askProduct = app => {
     let argumentSports = app.getContextArgument(CONTEXT.SPORTS, ARGUMENT.SPORTS);
     let argumentProduct = app.getArgument(ARGUMENT.PRODUCT);
-    let responseToUser = app.buildRichResponse().addSimpleResponse({
-        speech: 'You\'re welcome! Here are some ' + argumentSports.value + ' ' + argumentProduct + ' for you!',
-        displayText: 'You\'re welcome! Here are some ' + argumentSports.value + ' ' + argumentProduct + ' for you!'
-    });
+    let responseToUser;
+    if (app.hasSurfaceCapability(app.SurfaceCapabilities.SCREEN_OUTPUT)) {
+
+        var productRef = db.collection('shoes');// db.collection(argument.product)
+        var queryRef = productRef.where('sport', '==', 'tennis');//productRef.where('sport', '==', argument.sport);
+
+        var prodpic; 
+
+        /* Abfrage funktioniert noch nicht, wird richtig übersetzt, jedoch findet die app das Objekt nicht
+        
+        queryRef.on("value", function(snapshot){
+                var imgsnap = snapshot.child("img");
+                var img =imgsnap.val();
+                prodpic = img;
+            });
+        */
+        responseToUser = app.buildRichResponse()
+            .addSimpleResponse({
+                speech: 'You\'re welcome! Here are some '+ argumentSports.value + ' ' + argumentProduct + ' for you!',
+                displayText: 'You\'re welcome! Here are some ' + argumentSports.value + ' ' + argumentProduct + ' for you!'
+            })
+            .addBasicCard(app.buildBasicCard('UnterschriftUnterDemBild')
+                .setImage(prodpic,'nice')
+            )
+    } else {
+        responseToUser = ('That is nice, if you ask me that on a screen based device again, I can show you some pictures');
+    }
+
     console.log('Response to Dialogflow (AoG): ' + JSON.stringify(responseToUser));
     app.ask(responseToUser); // Send response to Dialogflow and Google Assistant
 };
@@ -153,5 +192,3 @@ const dazzlerbot = functions.https.onRequest((request, response) => {
 module.exports = {
     dazzlerbot
 };
-
-/******************************************ACTIONS_ON_GOOGLE*************************************************************/
