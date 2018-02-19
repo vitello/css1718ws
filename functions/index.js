@@ -23,12 +23,12 @@ var gsReference = storage.refFromURL('gs://dazzlerbot.appspot.com/BARRICADE_2018
 
 /******************************************Datenbankabfragen*************************************************************/
 
-var db = admin.firestore();
+let db = admin.firestore();
 
 
-/***__Elemente erstellen__**/
+/***__Elemente erstellen__**//*
 var docRef = db.collection('shoes').doc('BARRICADE');
-/*
+
 var setBAR = docRef.set({
     name: 'Barricade 2018',
     color: 'white',
@@ -43,25 +43,6 @@ var setBAR2 = docRef.set({
     sport: 'football',
     img: 'https://firebasestorage.googleapis.com/v0/b/dazzlerbot.appspot.com/o/NOVAK_PRO_SCHUH_standard.jpg?alt=media&token=8263f55c-bffa-48f6-8e2e-57705b33cb61'
 });
-
-/***__Elemente abfragen__***//*
-var getDoc = docRef.get()
-    .then(doc => {
-        if (!doc.exists) {
-            console.log('No such document!');
-        } else {
-            console.log('Document data:', doc.data())
-        }
-    })
-    .catch(err =>{
-        console.log('Error getting document', err);
-    });
-
-
-
-
-/***__Elemebte Löschen__***//*
-var deleteDoc = db.collection('shoes').doc('BARRICADE').delete();
 
 /******************************************ACTIONS_ON_GOOGLE*************************************************************/
 const ACTION = {//Refers ti Intents --> Action
@@ -94,29 +75,54 @@ const askSports = app => {
     app.ask(responseToUser); // Send response to Dialogflow and Google Assistant
 };
 
+//globale Variable zum Speicherun des query results
+let Productarray = ["focus"];
+//query über database -- doch wie führt man diese richtig aus?
+function getMultiple(db){
+
+    var productRef = db.collection('shoes');
+    var query = productRef.where('sport', '==', 'tennis').get()
+        .then( snapshot => {
+            snapshot-forEach(doc => {
+                array.push(toString(doc.name));
+                Productarray.push("Schleife");
+            });
+        })
+        .catch(err => {
+            Productarray.push("Fehler");
+        });
+
+    return query;
+}
+
 const askProduct = app => {
     let argumentSports = app.getContextArgument(CONTEXT.SPORTS, ARGUMENT.SPORTS);
     let argumentProduct = app.getArgument(ARGUMENT.PRODUCT);
     let responseToUser;
     if (app.hasSurfaceCapability(app.SurfaceCapabilities.SCREEN_OUTPUT)) {
+        let array = [];
 
-        var array = ["focus"];
+        var collectionRef = db.collection('shoes');//argument.product
+        var query = collectionRef.where('sport', '==', 'tennis');//argument.sport
+        //query ^ über database -- doch wie führt man diese richtig aus?
+        query.get().then(function(results) {
+            if(results.empty) {
+              console.log("No documents found!");   
+            } else {
+              // go through all results
+              results.forEach(function (doc) {
+                console.log("Document data:", doc.data());
+                array.push(document.data().name);
+              });
+            }
+          }).catch(function(error) {
+              console.log("Error getting documents:", error);
+          });
 
-        var productRef = db.collection('shoes');// db.collection(argument.product)
-        var queryRef = productRef.where('sport', '==', 'tennis')//productRef.where('sport', '==', argument.sport);
-            .get()
-            .then( snapshot => {
-                snapshot-forEach(doc => {
-                    array.push(toString(doc.name));
-                });
-            })
-            .catch(err => {
-                app.push("Fehler");
-            });
 
- 
-        var prodpic = array[0];
-
+        //getMultiple(db);
+         
+        var prodpic = array[0];//Array wird nicht befüllt da in ausgabe immer "undefined"
 
         responseToUser = app.buildRichResponse()
             .addSimpleResponse({
