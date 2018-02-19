@@ -100,27 +100,32 @@ const askProduct = app => {
     let responseToUser;
     if (app.hasSurfaceCapability(app.SurfaceCapabilities.SCREEN_OUTPUT)) {
 
+        var array = ["focus"];
+
         var productRef = db.collection('shoes');// db.collection(argument.product)
-        var queryRef = productRef.where('sport', '==', 'tennis');//productRef.where('sport', '==', argument.sport);
-
-        var prodpic; 
-
-        /* Abfrage funktioniert noch nicht, wird richtig übersetzt, jedoch findet die app das Objekt nicht
-        
-        queryRef.on("value", function(snapshot){
-                var imgsnap = snapshot.child("img");
-                var img =imgsnap.val();
-                prodpic = img;
+        var queryRef = productRef.where('sport', '==', 'tennis')//productRef.where('sport', '==', argument.sport);
+            .get()
+            .then( snapshot => {
+                snapshot-forEach(doc => {
+                    array.push(toString(doc.name));
+                });
+            })
+            .catch(err => {
+                app.push("Fehler");
             });
-        */
+
+ 
+        var prodpic = array[0];
+
+
         responseToUser = app.buildRichResponse()
             .addSimpleResponse({
-                speech: 'You\'re welcome! Here are some '+ argumentSports.value + ' ' + argumentProduct + ' for you!',
+                speech: 'You\'re welcome! Here are some '+ ' ' + prodpic + ' ' +  argumentSports.value + ' ' + argumentProduct + ' for you!',
                 displayText: 'You\'re welcome! Here are some ' + argumentSports.value + ' ' + argumentProduct + ' for you!'
             })
-            .addBasicCard(app.buildBasicCard('UnterschriftUnterDemBild')
-                .setImage(prodpic,'nice')
-            )
+            //.addBasicCard(app.buildBasicCard('UnterschriftUnterDemBild')
+              //  .setImage(prodpic,'nice')
+            //)
     } else {
         responseToUser = ('That is nice, if you ask me that on a screen based device again, I can show you some pictures');
     }
@@ -152,7 +157,7 @@ const askOrder66 = app => {
 };
 
 const askWelcome = app => {
-    app.ask('Hello, Welcome to my Dialogflow agent! Deployed on Google Firebase Armin Functions'); // Send simple response to user
+    app.ask('Hello, Welcome to my Dialogflow agent! Deployed on Google Firebase Functions'); // Send simple response to user
 };
 
 const askUnknown = app => {
