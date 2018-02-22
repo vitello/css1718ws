@@ -11,38 +11,51 @@ const admin = require('firebase-admin');
 admin.initializeApp(functions.config().firebase);
 
 process.env.DEBUG = 'actions-on-google:*';
-/*******************************************__Storage Initialization__***************************************************//*
-
-Scheinbar nicht mehr unterstützt für die Verwendung mit node.js
---> download link der in der Datenbank gespeicher ist verwenden
-
-const storage = admin.storage();//reference to storage service
-var storageRef = storage.ref();//reference to storage
-
-var gsReference = storage.refFromURL('gs://dazzlerbot.appspot.com/BARRICADE_2018_BOOST_SCHUH_standard.jpg');
-
-/******************************************Datenbankabfragen*************************************************************/
 
 let db = admin.firestore();
 
+/*****************************************FUNCTIONS**********************************************************************/
+/*
+* Function to handle v2 webhook requests from Dialogflow
+* used if you work with data from our database
+*/
 
-/***__Elemente erstellen__**//*
-var docRef = db.collection('shoes').doc('BARRICADE');
+function setDocument(db) {
+    // [START set_document]
+    var data = {
+        name: 'Barricade 1718',
+        color: 'red',
+        sport: 'tennis',
+        img: 'USA'
+    };
 
-var setBAR = docRef.set({
-    name: 'Barricade 2018',
-    color: 'white',
-    stripes: 'black',
-    sport: 'tennis',
-    img: 'https://firebasestorage.googleapis.com/v0/b/dazzlerbot.appspot.com/o/BARRICADE_2018_BOOST_SCHUH_standard.jpg?alt=media&token=c2b3b5f6-9677-47a1-bceb-e4c25c7d75d5'
-});
-var setBAR2 = docRef.set({
-    name: 'Barricade 2018 Boost',
-    color: 'blue',
-    stripes: 'black',
-    sport: 'football',
-    img: 'https://firebasestorage.googleapis.com/v0/b/dazzlerbot.appspot.com/o/NOVAK_PRO_SCHUH_standard.jpg?alt=media&token=8263f55c-bffa-48f6-8e2e-57705b33cb61'
-});
+    // Add a new document in collection "cities" with ID 'LA'
+    var setDoc = db.collection('shoes').doc('BARRICADE').set(data);
+    // [END set_document]
+
+    return setDoc.then(res => {
+        console.log('Set: ', res);
+    });
+}
+
+function getDocument(db) {
+    // [START get_document]
+    var cityRef = db.collection("shoes").doc("BARRICADE");
+    var getDoc = cityRef.get()
+        .then(doc => {
+            if (!doc.exists) {
+                console.log("No such document!");
+            } else {
+                console.log("Document data:", doc.data());
+            }
+        })
+        .catch(err => {
+            console.log("Error getting document bla", err);
+        });
+    // [END get_document]
+
+    return getDoc;
+}
 
 /******************************************ACTIONS_ON_GOOGLE*************************************************************/
 const ACTION = {//Refers ti Intents --> Action
@@ -71,29 +84,10 @@ const askSports = app => {
         speech: 'That\'s great, you want to practice ' + argumentSports + '! Our shop provides lots of nice things for you.',
         displayText: 'That\'s great, you want to practice ' + argumentSports + '! Our shop provides lots of nice things for you.'
     });
-    console.log('Response to Dialogflow (AoG): ' + JSON.stringify(responseToUser));
+    console.log("Sport Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
+    getDocument(db);
     app.ask(responseToUser); // Send response to Dialogflow and Google Assistant
 };
-
-//globale Variable zum Speicherun des query results
-let Productarray = ["focus"];
-//query über database -- doch wie führt man diese richtig aus?
-function getMultiple(db){
-
-    var productRef = db.collection('shoes');
-    var query = productRef.where('sport', '==', 'tennis').get()
-        .then( snapshot => {
-            snapshot-forEach(doc => {
-                array.push(toString(doc.name));
-                Productarray.push("Schleife");
-            });
-        })
-        .catch(err => {
-            Productarray.push("Fehler");
-        });
-
-    return query;
-}
 
 const askProduct = app => {
     let argumentSports = app.getContextArgument(CONTEXT.SPORTS, ARGUMENT.SPORTS);
@@ -102,42 +96,59 @@ const askProduct = app => {
     if (app.hasSurfaceCapability(app.SurfaceCapabilities.SCREEN_OUTPUT)) {
         let array = [];
 
-        var collectionRef = db.collection('shoes');//argument.product
+        var collectionRef = db.collection("shoes");//argument.product
+        //zunächst probieren die Daten nur für ein Dokument auszulesen
         var query = collectionRef.where('sport', '==', 'tennis');//argument.sport
-        //query ^ über database -- doch wie führt man diese richtig aus?
+
         query.get().then(function(results) {
             if(results.empty) {
-              console.log("No documents found!");   
+              console.log("No documents found! aarrg");   
             } else {
+                console.log("in else");  
               // go through all results
               results.forEach(function (doc) {
-                console.log("Document data:", doc.data());
-                array.push(document.data().name);
+                console.log("Document data2:", doc.data());
+                array.push(doc.data().name);
               });
+              var prodpic = array[0];
+              console.log(prodpic);
+              /* Dank der asynchronität muss hier alles geschehen, wofür die Daten aus der Datenbank genommen werden
+              da diese bei fortschreiten des PRogrammes dann noch nicht vorhanden sein werden?! Macht wenig Sinn, ist aber leider so */
+              responseToUser = app.buildRichResponse()
+              .addSimpleResponse({
+                  speech: 'You\'re welcome! Here are some ' + prodpic + ' ' +  argumentSports.value + ' ' + argumentProduct + ' for you!',
+                  displayText: 'You\'re welcome! Here are some ' + argumentSports.value + ' ' + argumentProduct + ' for you!'
+              });
+
+              
+              console.log("Product Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
+          
+              app.ask(responseToUser);
+            
+
+
             }
           }).catch(function(error) {
               console.log("Error getting documents:", error);
           });
 
 
-        //getMultiple(db);
-         
-        var prodpic = array[0];//Array wird nicht befüllt da in ausgabe immer "undefined"
 
-        responseToUser = app.buildRichResponse()
-            .addSimpleResponse({
-                speech: 'You\'re welcome! Here are some '+ ' ' + prodpic + ' ' +  argumentSports.value + ' ' + argumentProduct + ' for you!',
-                displayText: 'You\'re welcome! Here are some ' + argumentSports.value + ' ' + argumentProduct + ' for you!'
-            })
-            //.addBasicCard(app.buildBasicCard('UnterschriftUnterDemBild')
-              //  .setImage(prodpic,'nice')
-            //)
+
+          
     } else {
         responseToUser = ('That is nice, if you ask me that on a screen based device again, I can show you some pictures');
+        
+        console.log("Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
+    
+        app.ask(responseToUser);
+        
     }
+  
+      //.addBasicCard(app.buildBasicCard('UnterschriftUnterDemBild')
+        //  .setImage(prodpic,'nice')
+      //)
 
-    console.log('Response to Dialogflow (AoG): ' + JSON.stringify(responseToUser));
-    app.ask(responseToUser); // Send response to Dialogflow and Google Assistant
 };
 
 const askOrder66 = app => {
@@ -167,7 +178,8 @@ const askWelcome = app => {
 };
 
 const askUnknown = app => {
-    app.ask('I\'m having trouble, can you try that again? Deployed on Google Firebase Functions'); // Send simple response to user
+    app.ask('I\'m having trouble, can you try that again?'); // Send simple response to user
+    callback(null, responseJson);
 };
 
 const askDefault = app => {

@@ -13,3 +13,14 @@ const functions = require('firebase-functions');
 admin.initializeApp(functions.config().firebase);
 
 let db = admin.firestore();
+
+
+function deleteDocument(db) {
+    // [START delete_document]
+    var deleteDoc = db.collection('shoes').doc('BARRICADE').delete();
+    // [END delete_document]
+
+    return deleteDoc.then(res => {
+        console.log('Delete: ', res);
+    });
+}
