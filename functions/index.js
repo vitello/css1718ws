@@ -19,18 +19,38 @@ let db = admin.firestore();
 * Function to handle v2 webhook requests from Dialogflow
 * used if you work with data from our database
 */
+function deleteDocument(db) {
+    // [START delete_document]
+    var deleteDoc = db.collection('shoes').doc('BARRICADE').delete();
+    // [END delete_document]
 
+    return deleteDoc.then(res => {
+        console.log('Delete: ', res);
+    });
+}
+//deleteDocument(db);
 function setDocument(db) {
     // [START set_document]
     var data = {
-        name: 'Barricade 1718',
+        name: 'Barricade tennis',
         color: 'red',
         sport: 'tennis',
         img: 'USA'
     };
-
+    var data2 = {
+        name: 'Barricade football',
+        color: 'red',
+        sport: 'football',
+        img: 'USA'
+    };
+    var data3 = {
+        name: 'Barricade golf',
+        color: 'red',
+        sport: 'golf',
+        img: 'USA'
+    };
     // Add a new document in collection "cities" with ID 'LA'
-    var setDoc = db.collection('shoes').doc('BARRICADE').set(data);
+    var setDoc = db.collection('shoes').doc('BARRIGOLF').set(data3);
     // [END set_document]
 
     return setDoc.then(res => {
@@ -81,28 +101,29 @@ const CONTEXT = {
 const askSports = app => {
     let argumentSports = app.getArgument(ARGUMENT.SPORTS);
     let responseToUser = app.buildRichResponse().addSimpleResponse({
-        speech: 'That\'s great, you want to practice ' + argumentSports + '! Our shop provides lots of nice things for you.',
-        displayText: 'That\'s great, you want to practice ' + argumentSports + '! Our shop provides lots of nice things for you.'
+        speech: 'That\'s great, you want to practice ' + argumentSports + '! Our shop provides lots of nice things for you. Which product do you need for your inventory?',
+        displayText: 'That\'s great, you want to practice ' + argumentSports + '! Our shop provides lots of nice things for you. Which product do you need for your inventory?'
     });
     console.log("Sport Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
-    getDocument(db);
     app.ask(responseToUser); // Send response to Dialogflow and Google Assistant
 };
 
 const askProduct = app => {
     let argumentSports = app.getContextArgument(CONTEXT.SPORTS, ARGUMENT.SPORTS);
+    console.log(argumentSports.value);   
     let argumentProduct = app.getArgument(ARGUMENT.PRODUCT);
+    console.log(argumentProduct);   
     let responseToUser;
     if (app.hasSurfaceCapability(app.SurfaceCapabilities.SCREEN_OUTPUT)) {
         let array = [];
 
-        var collectionRef = db.collection("shoes");//argument.product
+        var collectionRef = db.collection(argumentProduct);
         //zunächst probieren die Daten nur für ein Dokument auszulesen
-        var query = collectionRef.where('sport', '==', 'tennis');//argument.sport
+        var query = collectionRef.where('sport', '==', argumentSports.value);
 
         query.get().then(function(results) {
             if(results.empty) {
-              console.log("No documents found! aarrg");   
+              console.log("No documents found!");   
             } else {
                 console.log("in else");  
               // go through all results
@@ -174,7 +195,7 @@ const askOrder66 = app => {
 };
 
 const askWelcome = app => {
-    app.ask('Hello, Welcome to my Dialogflow agent! Deployed on Google Firebase Functions'); // Send simple response to user
+    app.ask('Hello, Welcome to the Dazzler shopping agent! Which sport activity do you practice?'); // Send simple response to user
 };
 
 const askUnknown = app => {
