@@ -15,49 +15,35 @@ process.env.DEBUG = 'actions-on-google:*';
 let db = admin.firestore();
 
 /*****************************************FUNCTIONS**********************************************************************/
-/*
-* Function to handle v2 webhook requests from Dialogflow
-* used if you work with data from our database
-*/
-function deleteDocument(db) {
-    // [START delete_document]
-    var deleteDoc = db.collection('shoes').doc('BARRICADE').delete();
-    // [END delete_document]
 
-    return deleteDoc.then(res => {
-        console.log('Delete: ', res);
-    });
-}
-//deleteDocument(db);
+/**
+ * Function to add new documents to database
+ * uncomment setDocument(db) at the end to activate
+ * 
+ */
 function setDocument(db) {
     // [START set_document]
     var data = {
-        name: 'Barricade tennis',
-        color: 'black',
-        sport: 'tennis',
-        img: 'https://firebasestorage.googleapis.com/v0/b/dazzlerbot.appspot.com/o/BARRICADE_2018_BOOST_SCHUH_standard.jpg?alt=media&token=c2b3b5f6-9677-47a1-bceb-e4c25c7d75d5'
-    };
-    var data2 = {
-        name: 'Barricade football',
-        color: 'shite',
-        sport: 'football',
-        img: 'https://firebasestorage.googleapis.com/v0/b/dazzlerbot.appspot.com/o/BARRICADE_2018_SCHUH_standard.jpg?alt=media&token=613e9ca9-e73e-456f-a7ba-d21e1ba66c23'
-    };
-    var data3 = {
-        name: 'Barricade golf',
-        color: 'blue',
-        sport: 'golf',
-        img: 'https://firebasestorage.googleapis.com/v0/b/dazzlerbot.appspot.com/o/NOVAK_PRO_SCHUH_standard.jpg?alt=media&token=8263f55c-bffa-48f6-8e2e-57705b33cb61'
+        name: 'I-5923',
+		color: 'red',
+		type: 'shoe',
+		img: 'https://firebasestorage.googleapis.com/v0/b/dazzlerbot.appspot.com/o/AdidasProdukte%2Fshoes%2Foriginals%2Foriginals_r.jpg?alt=media&token=c732693d-6b19-47e5-b1f3-03094c22d305',
+		link: 'https://www.adidas.de/i-5923-schuh/B42225.html'
     };
     // Add a new document in collection "cities" with ID 'LA'
-    var setDoc = db.collection('shoes').doc('BARRIFOOTBALL').set(data2);
+    var setDoc = db.collection('originals').doc('oshoe_red').set(data);
     // [END set_document]
 
     return setDoc.then(res => {
         console.log('Set: ', res);
     });
 }
-setDocument(db);
+//setDocument(db);
+
+/**
+ * For Documentation of the entries that are in the database 
+ * already look at the file in dropbox
+ */
 function getDocument(db) {
     // [START get_document]
     var cityRef = db.collection("shoes").doc("BARRICADE");
@@ -75,6 +61,16 @@ function getDocument(db) {
     // [END get_document]
 
     return getDoc;
+}
+
+function buildOptionItem(app, aString) {
+    // Provide a key which is unique to each option.
+    // And synonyms that the user can say alternativly to the title
+    return app.buildOptionItem(`KEY_${aString}`, aString)
+        .setTitle(`Option ${aString}`)
+        // Description and image are optional.
+        .setDescription(`Description for ${aString}`)
+        .setImage('https://example.com/image.jpg', 'An image')
 }
 
 /******************************************ACTIONS_ON_GOOGLE*************************************************************/
@@ -115,51 +111,88 @@ const askProduct = app => {
     console.log(argumentProduct);   
     let responseToUser;
     if (app.hasSurfaceCapability(app.SurfaceCapabilities.SCREEN_OUTPUT)) {
+        //Container zum Speichern der abgerufenen Daten
         let img = [];
+        let link = [];
         let color = [];
         let name = [];
+        
+        var collectionRef = db.collection(argumentSports.value);
+        
 
-        var collectionRef = db.collection(argumentProduct);
         //zunächst probieren die Daten nur für ein Dokument auszulesen
-        var query = collectionRef.where('sport', '==', argumentSports.value);
+       
+        var query = collectionRef.where('type', '==', argumentProduct);
+        
 
-        query.get().then(function(results) {
-            if(results.empty) {
-              console.log("No documents found!");   
-            } else {
-                console.log("in else");  
-              // go through all results
-              results.forEach(function (doc) {
-                console.log("Document data2:", doc.data());
-                img.push(doc.data().img);
-                name.push(doc.data().name);
-                color.push(doc.data().color);
-              });
-              var prodname = name[0];
-              var prodcol = color[0];
-              var prodpic = img[0];
+        query.get().then(
+            /* Hier Operationen auf den Daten ausführen */
+            function(results) {
+                if(results.empty) {
+                    responseToUser = app.buildRichResponse()
+                    .addSimpleResponse({
+                        speech: 'I am sorry, I can not find this product. Please try another one or restart the service.',
+                        displayText: 'I am sorry, I can not find this product. Please try another one or restart the service.'
+                    })
+                    console.log("Product Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
+                    app.ask(responseToUser);
+                    //console.log("Error getting documents:", error);   
+                } else {  
+                    // go through all results
 
-              /* Dank der asynchronität muss hier alles geschehen, wofür die Daten aus der Datenbank genommen werden
-              da diese bei fortschreiten des PRogrammes dann noch nicht vorhanden sein werden?! Macht wenig Sinn, ist aber leider so */
-              responseToUser = app.buildRichResponse()
-              .addSimpleResponse({
-                  speech: 'You\'re welcome! Here are ' + prodcol + ' ' +  argumentSports.value + ' ' + argumentProduct + ' for you!',
-                  displayText: 'You\'re welcome! Here are ' + prodcol + ' ' + argumentSports.value + ' ' + argumentProduct + ' for you!'
-            })
-            .addBasicCard(app.buildBasicCard(prodname)
-                .setImage(prodpic,'nice')
-            );
-              
-              console.log("Product Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
-          
-              app.ask(responseToUser);
-            
+                    let carousel = app.buildCarousel();
 
-
+                    results.forEach(
+                        function (doc) {
+                        console.log("Document data:", doc.data());
+                            carousel.addItems(
+                                app.buildOptionItem(`KEY_${doc.data().link}`,doc.data().link)
+                                .setTitle(doc.data().name)
+                                .setDescription(doc.data().link)
+                                .setImage(doc.data().img, 'image')
+                            );
+                        }
+                    );
+                    
+                    console.log("Build response");
+                    app.askWithCarousel('Alright! Here are some products for you!', carousel);
+                                   
+                    /*const app = new ActionsSdkApp({request, response});
+                    let actionMap = new Map();
+                    actionMap.set(app.StandardIntents.OPTION, () => {
+                    const param = app.getSelectedOption();
+                    if (!param) {
+                        app.ask('You did not select any item from the list or carousel');
+                    } else if (param === 'MATH_AND_PRIME') {
+                        app.ask('42 is an abundant number because the sum of its…');
+                    } else if (param === 'EGYPT') {
+                        app.ask('42 gods who ruled on the fate of the dead in the...');
+                    } else if (param === 'RECIPES') {
+                        app.ask('Here\'s a beautifully simple recipe that\'s full...');
+                    } else {
+                        app.ask('You selected an unknown item from the list or carousel');
+                    }
+                    });
+                    app.handleRequest(actionMap);
+                    */
+                    //console.log("Product Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
+                    //app.ask(responseToUser);
+                }
             }
-          }).catch(function(error) {
-              console.log("Error getting documents:", error);
-          });
+        ).catch(function(error) {
+            /*
+                HIER CLIENTNACHRICHT EINBAUEN
+            */  
+            responseToUser = app.buildRichResponse()
+            .addSimpleResponse({
+                speech: 'I am sorry, I can not fin this product. Please try another one or restart the service.',
+                displayText: 'I am sorry, I can not fin this product. Please try another one or restart the service.'
+            })
+            console.log("Product Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
+            app.ask(responseToUser);
+            //console.log("Error getting documents:", error);
+        });
+        
           
     } else {
         responseToUser = ('That is nice, if you ask me that on a screen based device again, I can show you some pictures');      

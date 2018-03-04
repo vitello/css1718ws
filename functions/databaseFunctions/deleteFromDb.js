@@ -24,3 +24,4 @@ function deleteDocument(db) {
         console.log('Delete: ', res);
     });
 }
+//deleteDocument(db);
