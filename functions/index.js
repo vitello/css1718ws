@@ -63,20 +63,12 @@ function getDocument(db) {
     return getDoc;
 }
 
-function buildOptionItem(app, aString) {
-    // Provide a key which is unique to each option.
-    // And synonyms that the user can say alternativly to the title
-    return app.buildOptionItem(`KEY_${aString}`, aString)
-        .setTitle(`Option ${aString}`)
-        // Description and image are optional.
-        .setDescription(`Description for ${aString}`)
-        .setImage('https://example.com/image.jpg', 'An image')
-}
 
 /******************************************ACTIONS_ON_GOOGLE*************************************************************/
 const ACTION = {//Refers ti Intents --> Action
     SPORTS: 'action_sports',
     PRODUCT: 'action_product',
+    PROPTION: 'action_product_choice',
     ORDER_66: 'action_order66',
     WELCOME: 'input.welcome',
     UNKNOWN: 'input.unknown',
@@ -96,12 +88,23 @@ const CONTEXT = {
 
 const askSports = app => {
     let argumentSports = app.getArgument(ARGUMENT.SPORTS);
+    console.log(argumentSports);
+
+    if(argumentSports === 'originals'){
     let responseToUser = app.buildRichResponse().addSimpleResponse({
+            speech: 'That\'s great, you want to see our original product line! Since now we can provide you with shoes. Which product do you need for your inventory?',
+            displayText: 'That\'s great, you want to see our original product line! Since now we can provide you with shoes. Which product do you need for your inventory?'
+        });
+        console.log("Sport Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
+        app.ask(responseToUser); // Send response to Dialogflow and Google Assistant
+    }else{
+        let responseToUser = app.buildRichResponse().addSimpleResponse({
         speech: 'That\'s great, you want to practice ' + argumentSports + '! Our shop provides lots of nice things for you. Which product do you need for your inventory?',
         displayText: 'That\'s great, you want to practice ' + argumentSports + '! Our shop provides lots of nice things for you. Which product do you need for your inventory?'
     });
     console.log("Sport Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
     app.ask(responseToUser); // Send response to Dialogflow and Google Assistant
+    }
 };
 
 const askProduct = app => {
@@ -111,20 +114,10 @@ const askProduct = app => {
     console.log(argumentProduct);   
     let responseToUser;
     if (app.hasSurfaceCapability(app.SurfaceCapabilities.SCREEN_OUTPUT)) {
-        //Container zum Speichern der abgerufenen Daten
-        let img = [];
-        let link = [];
-        let color = [];
-        let name = [];
         
         var collectionRef = db.collection(argumentSports.value);
-        
-
-        //zunächst probieren die Daten nur für ein Dokument auszulesen
-       
         var query = collectionRef.where('type', '==', argumentProduct);
         
-
         query.get().then(
             /* Hier Operationen auf den Daten ausführen */
             function(results) {
@@ -139,14 +132,13 @@ const askProduct = app => {
                     //console.log("Error getting documents:", error);   
                 } else {  
                     // go through all results
-
                     let carousel = app.buildCarousel();
 
                     results.forEach(
                         function (doc) {
                         console.log("Document data:", doc.data());
                             carousel.addItems(
-                                app.buildOptionItem(`KEY_${doc.data().link}`,doc.data().link)
+                                app.buildOptionItem(`${doc.data().link}`,doc.data().link)
                                 .setTitle(doc.data().name)
                                 .setDescription(doc.data().link)
                                 .setImage(doc.data().img, 'image')
@@ -157,24 +149,6 @@ const askProduct = app => {
                     console.log("Build response");
                     app.askWithCarousel('Alright! Here are some products for you!', carousel);
                                    
-                    /*const app = new ActionsSdkApp({request, response});
-                    let actionMap = new Map();
-                    actionMap.set(app.StandardIntents.OPTION, () => {
-                    const param = app.getSelectedOption();
-                    if (!param) {
-                        app.ask('You did not select any item from the list or carousel');
-                    } else if (param === 'MATH_AND_PRIME') {
-                        app.ask('42 is an abundant number because the sum of its…');
-                    } else if (param === 'EGYPT') {
-                        app.ask('42 gods who ruled on the fate of the dead in the...');
-                    } else if (param === 'RECIPES') {
-                        app.ask('Here\'s a beautifully simple recipe that\'s full...');
-                    } else {
-                        app.ask('You selected an unknown item from the list or carousel');
-                    }
-                    });
-                    app.handleRequest(actionMap);
-                    */
                     //console.log("Product Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
                     //app.ask(responseToUser);
                 }
@@ -185,21 +159,49 @@ const askProduct = app => {
             */  
             responseToUser = app.buildRichResponse()
             .addSimpleResponse({
-                speech: 'I am sorry, I can not fin this product. Please try another one or restart the service.',
-                displayText: 'I am sorry, I can not fin this product. Please try another one or restart the service.'
+                speech: 'I am sorry, something went completely wrong. Please retry your approach.',
+                displayText: 'I am sorry, something went completely wrong. Please retry your approach.'
             })
             console.log("Product Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
             app.ask(responseToUser);
             //console.log("Error getting documents:", error);
         });
         
-          
     } else {
         responseToUser = ('That is nice, if you ask me that on a screen based device again, I can show you some pictures');      
         console.log("Response to Dialogflow (AoG): " + JSON.stringify(responseToUser));
         app.ask(responseToUser);   
     }
 };
+
+const prodchoice = app => {
+    let responseToUser;
+    if (app.hasSurfaceCapability(app.SurfaceCapabilities.SCREEN_OUTPUT)) {
+        
+        responseToUser = app.buildRichResponse()
+            .addSimpleResponse({
+                speech: 'That is a great choice! Here you find this product: ',
+                displayText: 'That is a great choice! Here you find this product: '
+            })
+            .addBasicCard(
+                app.buildBasicCard('Link to your product below:')
+                .setTitle('Have Fun!')
+                .addButton('YOU HAVE TO CLICK ME NOW', app.getSelectedOption())
+            );
+
+        /*switch (app.getSelectedOption()) {
+            case 'KEY_A': 
+                return app.tell('Option A is a solid choice.')
+            default:
+                return app.ask(responseToUser)
+        }*/
+        
+
+    }else {
+        responseToUser = ('Good Choice!');
+    }
+    app.ask(responseToUser);
+}
 
 const askOrder66 = app => {
     let responseToUser;
@@ -246,6 +248,8 @@ const askDefault = app => {
     // ...
 //};
 
+ 
+
 const actionMap = new Map();
 actionMap.set(ACTION.SPORTS, askSports);
 actionMap.set(ACTION.PRODUCT, askProduct);
@@ -253,6 +257,7 @@ actionMap.set(ACTION.ORDER_66, askOrder66);
 actionMap.set(ACTION.UNKNOWN, askUnknown);
 actionMap.set(ACTION.WELCOME, askWelcome);
 actionMap.set(ACTION.DEFAULT, askDefault);
+actionMap.set(ACTION.PROPTION, prodchoice);
 //actionMap.set(ACTION.TEMPLATE, templateFunction);
 
 const dazzlerbot = functions.https.onRequest((request, response) => {
